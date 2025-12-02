@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "768252539367",
+    "project_id": "voteeasy-app1",
+    "storage_bucket": "voteeasy-app1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:768252539367:android:3d680b29de0c2cbe4a0d42",
+        "android_client_info": {
+          "package_name": "com.example.voteeasy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIrJmCqsedhD_FBME6vVoIgGybQboCX-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

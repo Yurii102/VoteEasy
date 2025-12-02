@@ -2,21 +2,88 @@
 
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
+import '../core/services/analytics_service.dart';
+import '../core/services/user_preferences_service.dart';
+import '../core/repositories/auth_repository.dart';
 import 'login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
-  static const String _userName = 'Yurii Surniak';
-  static const String _userEmail = 'surniakyura@gmail.com';
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final AnalyticsService _analyticsService = AnalyticsService.instance;
+  final AuthRepository _authRepository = AuthRepository();
+  
+  bool _isLoading = false;
+  String _userName = 'User';
+  String _userEmail = 'user@example.com';
   static const String _memberSince = 'March 23, 2025';
 
-  void _handleSignOut(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
+  @override
+  void initState() {
+    super.initState();
+    _analyticsService.logScreenView(
+      screenName: 'profile_screen',
+      screenClass: 'ProfileScreen',
     );
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final user = _authRepository.currentUser;
+    if (user != null) {
+      setState(() {
+        _userName = user.displayName ?? 'User';
+        _userEmail = user.email ?? 'user@example.com';
+      });
+    }
+  }
+
+  Future<void> _handleSignOut(BuildContext context) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authRepository.signOut();
+
+      _analyticsService.logEvent(
+        name: 'user_sign_out',
+        parameters: {
+          'email': _userEmail,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          // ignore: use_build_context_synchronously
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error signing out: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -253,6 +320,28 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+            
+            // User Preferences Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'My Preferences',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPreferencesCard(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            
             // Sign Out Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -260,7 +349,7 @@ class ProfileScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: () => _handleSignOut(context),
+                  onPressed: _isLoading ? null : () => _handleSignOut(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,
                     shape: RoundedRectangleBorder(
@@ -268,10 +357,19 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  label: const Text(
-                    'Sign Out',
-                    style: TextStyle(
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.logout, color: Colors.white),
+                  label: Text(
+                    _isLoading ? 'Signing out...' : 'Sign Out',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -406,6 +504,203 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPreferencesCard() {
+    final prefsService = UserPreferencesService();
+    
+    return FutureBuilder<Map<String, dynamic>>(
+      future: prefsService.getAllPreferences(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final prefs = snapshot.data!;
+        final lastFilter = prefs['last_filter'] as String;
+        final searchHistory = prefs['search_history'] as List<String>;
+        final sortOrder = prefs['sort_order'] as String;
+        final showClosedPolls = prefs['show_closed_polls'] as bool;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPrefRow(
+                Icons.filter_list,
+                'Default Filter',
+                lastFilter,
+                AppColors.primary,
+              ),
+              const Divider(height: 24),
+              _buildPrefRow(
+                Icons.sort,
+                'Sort Order',
+                sortOrder,
+                AppColors.success,
+              ),
+              const Divider(height: 24),
+              _buildPrefRow(
+                Icons.visibility,
+                'Show Closed Polls',
+                showClosedPolls ? 'Yes' : 'No',
+                showClosedPolls ? AppColors.success : AppColors.error,
+              ),
+              if (searchHistory.isNotEmpty) ...[
+                const Divider(height: 24),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.history,
+                      size: 20,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Search History',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${searchHistory.length} items',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: searchHistory.take(3).map((query) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        query,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Clear Preferences'),
+                        content: const Text(
+                          'Are you sure you want to clear all saved preferences?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'Clear',
+                              style: TextStyle(color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true && mounted) {
+                      await prefsService.clearAll();
+                      setState(() {});
+                      if (mounted) {
+                        // ignore: use_build_context_synchronously
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Preferences cleared'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.error),
+                  ),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                  label: const Text(
+                    'Clear All Preferences',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPrefRow(IconData icon, String label, String value, Color iconColor) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: iconColor,
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }
