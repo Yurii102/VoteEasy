@@ -61,6 +61,12 @@ workflows:
     - save-dart-cache@1:
         title: Save Dart packages cache
     
+    - file-downloader@1:
+        title: Download release keystore
+        inputs:
+        - source: $BITRISEIO_ANDROID_KEYSTORE_URL
+        - destination: $BITRISE_SOURCE_DIR/voteeasy/android/voteeasy.jks
+    
     - script@1:
         title: Build Android APK (Release)
         inputs:
