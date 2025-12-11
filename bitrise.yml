@@ -62,6 +62,22 @@ workflows:
         title: Save Dart packages cache
     
     - script@1:
+        title: Get Bitrise debug keystore SHA-1
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            
+            echo "Getting SHA-1 from Bitrise debug keystore..."
+            echo "Add this SHA-1 to Firebase Console if Google Sign-In fails!"
+            echo ""
+            
+            keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android 2>/dev/null | grep SHA1 || echo "Could not get SHA1"
+            
+            echo ""
+            echo "SHA-1 fingerprint above should be added to Firebase Console > Project Settings > Your apps > Android app > Add fingerprint"
+    
+    - script@1:
         title: Build Android APK (Release)
         inputs:
         - content: |-
