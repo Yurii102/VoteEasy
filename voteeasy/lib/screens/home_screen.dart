@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/constants/app_colors.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/user_preferences_service.dart';
+import '../core/repositories/auth_repository.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import '../core/widgets/poll_card.dart';
 import '../core/bloc/polls/polls_bloc.dart';
@@ -42,6 +43,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   final TextEditingController _searchController = TextEditingController();
   final AnalyticsService _analyticsService = AnalyticsService.instance;
   final UserPreferencesService _prefsService = UserPreferencesService();
+  final AuthRepository _authRepository = AuthRepository();
   List<String> _searchHistory = [];
 
   @override
@@ -91,11 +93,22 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     
     // Apply filter
     if (_selectedFilter != 'All') {
+      final currentUser = _authRepository.currentUser;
+      
       filtered = filtered.where((poll) {
-        if (_selectedFilter == 'Mine') {
-          return poll.status == 'MINE';
+        switch (_selectedFilter) {
+          case 'Open':
+            return !poll.isPrivate;
+          
+          case 'Closed':
+            return poll.isPrivate;
+          
+          case 'Mine':
+            return currentUser != null && poll.authorId == currentUser.uid;
+          
+          default:
+            return true;
         }
-        return poll.status == _selectedFilter.toUpperCase();
       }).toList();
     }
     
@@ -414,7 +427,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   }
 
   Widget _buildPollsList(BuildContext context, PollsState state, List<Poll> filteredPolls) {
-    // Show loading indicator
+
     if (state is PollsLoadingState && state.data.isEmpty) {
       return const Center(
         child: Column(
@@ -536,7 +549,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => PollDetailsScreen(
-                    pollData: pollMap,
+                    pollId: poll.id,
+                    pollData: pollMap, // deprecated
                   ),
                 ),
               );
@@ -553,7 +567,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => PollDetailsScreen(
-                      pollData: pollMap,
+                      pollId: poll.id,
+                      pollData: pollMap, // deprecated
                     ),
                   ),
                 );
@@ -563,17 +578,25 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                   pollId: poll.id,
                 );
                 
+                // Підготовка реальних даних опцій з votesCount
+                final pollOptions = poll.options.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final optionText = entry.value;
+                  final votes = poll.votesCount['$index'] ?? 0;
+                  
+                  return {
+                    'id': index,
+                    'text': optionText,
+                    'votes': votes,
+                  };
+                }).toList();
+                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => PollResultsScreen(
                       pollData: pollMap,
-                      pollOptions: [
-                        {'id': 1, 'text': 'Option A', 'votes': 45},
-                        {'id': 2, 'text': 'Option B', 'votes': 32},
-                        {'id': 3, 'text': 'Option C', 'votes': 18},
-                        {'id': 4, 'text': 'Option D', 'votes': 12},
-                      ],
+                      pollOptions: pollOptions,
                     ),
                   ),
                 );

@@ -1,17 +1,33 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/constants/app_colors.dart';
 import '../core/services/analytics_service.dart';
+import '../core/bloc/create_poll/create_poll_bloc.dart';
+import '../core/bloc/create_poll/create_poll_event.dart';
+import '../core/bloc/create_poll/create_poll_state.dart';
 
-class CreatePollScreen extends StatefulWidget {
+class CreatePollScreen extends StatelessWidget {
   const CreatePollScreen({super.key});
 
   @override
-  State<CreatePollScreen> createState() => _CreatePollScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => CreatePollBloc(),
+      child: const _CreatePollScreenContent(),
+    );
+  }
 }
 
-class _CreatePollScreenState extends State<CreatePollScreen> {
+class _CreatePollScreenContent extends StatefulWidget {
+  const _CreatePollScreenContent();
+
+  @override
+  State<_CreatePollScreenContent> createState() => _CreatePollScreenContentState();
+}
+
+class _CreatePollScreenContentState extends State<_CreatePollScreenContent> {
   final AnalyticsService _analyticsService = AnalyticsService.instance;
   final _formKey = GlobalKey<FormState>();
   
@@ -26,7 +42,8 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
   String _selectedDuration = '7 days';
   bool _allowMultipleVotes = false;
   bool _showResultsBeforeEnd = true;
-  bool _isAnonymous = false;
+  bool _isPrivate = false;
+  final TextEditingController _passwordController = TextEditingController();
 
   final List<String> _categories = [
     'General',
@@ -61,6 +78,7 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
   void dispose() {
     _questionController.dispose();
     _descriptionController.dispose();
+    _passwordController.dispose();
     for (var controller in _optionControllers) {
       controller.dispose();
     }
@@ -98,7 +116,7 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
     }
   }
 
-  void _handleCreatePoll() {
+  Future<void> _handleCreatePoll() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -106,9 +124,9 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
     // Check if at least 2 options have text
     final filledOptions = _optionControllers
         .where((controller) => controller.text.trim().isNotEmpty)
-        .length;
+        .toList();
 
-    if (filledOptions < 2) {
+    if (filledOptions.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please provide at least 2 options'),
@@ -118,76 +136,157 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
       return;
     }
 
+    // Підготовка даних
+    final options = filledOptions
+        .map((controller) => controller.text.trim())
+        .toList();
+
+    // Конвертація тривалості в дні
+    int durationDays = 0;
+    switch (_selectedDuration) {
+      case '1 day':
+        durationDays = 1;
+        break;
+      case '3 days':
+        durationDays = 3;
+        break;
+      case '7 days':
+        durationDays = 7;
+        break;
+      case '14 days':
+        durationDays = 14;
+        break;
+      case '30 days':
+        durationDays = 30;
+        break;
+      case 'No limit':
+        durationDays = 0; // 0 = без обмеження
+        break;
+    }
+
+    // Відправка події в BLoC
+    context.read<CreatePollBloc>().add(
+          CreatePollSubmitted(
+            question: _questionController.text.trim(),
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            options: options,
+            category: _selectedCategory,
+            durationDays: durationDays,
+            allowMultipleVotes: _allowMultipleVotes,
+            showResultsBeforeEnd: _showResultsBeforeEnd,
+            isPrivate: _isPrivate,
+            password: _isPrivate ? _passwordController.text.trim() : null,
+          ),
+        );
+
+    // Analytics
     _analyticsService.logEvent(
-      name: 'poll_created',
+      name: 'poll_creation_attempted',
       parameters: {
-        'question': _questionController.text,
-        'options_count': filledOptions.toString(),
+        'question_length': _questionController.text.length.toString(),
+        'options_count': options.length.toString(),
         'category': _selectedCategory,
         'duration': _selectedDuration,
         'allow_multiple_votes': _allowMultipleVotes.toString(),
       },
     );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Poll created successfully!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-
-    // Navigate back after a delay
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Create New Poll',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+    return BlocListener<CreatePollBloc, CreatePollState>(
+      listener: (context, state) {
+        if (state is PollCreateSuccess) {
+          // Analytics
+          _analyticsService.logEvent(
+            name: 'poll_created',
+            parameters: {
+              'poll_id': state.poll.id,
+              'question': state.poll.question,
+              'options_count': state.poll.options.length.toString(),
+              'category': state.poll.category,
+            },
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Poll created successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+
+          // Reset form
+          context.read<CreatePollBloc>().add(const CreatePollReset());
+
+          // Navigate back
+          Navigator.pop(context);
+        } else if (state is PollCreateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _handleCreatePoll,
-            child: const Text(
-              'Create',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+          title: const Text(
+            'Create New Poll',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Question Section
-                const Text(
+          actions: [
+            BlocBuilder<CreatePollBloc, CreatePollState>(
+              builder: (context, state) {
+                final isLoading = state is PollCreating;
+                return TextButton(
+                  onPressed: isLoading ? null : _handleCreatePoll,
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Create',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Question Section
+                  const Text(
                   'Poll Question',
                   style: TextStyle(
                     fontSize: 16,
@@ -533,58 +632,61 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
                       const Divider(),
                       SwitchListTile(
                         title: const Text(
-                          'Anonymous poll',
+                          'Private Poll',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         subtitle: const Text(
-                          'Hide voter identities',
+                          'Require password to vote',
                           style: TextStyle(fontSize: 12),
                         ),
-                        value: _isAnonymous,
+                        value: _isPrivate,
                         activeColor: AppColors.primary,
                         contentPadding: EdgeInsets.zero,
                         onChanged: (value) {
                           setState(() {
-                            _isAnonymous = value;
+                            _isPrivate = value;
+                            if (!value) {
+                              _passwordController.clear();
+                            }
                           });
                         },
                       ),
+                      if (_isPrivate) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            labelText: 'Poll Password',
+                            hintText: 'Enter password for private poll',
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                          validator: (value) {
+                            if (_isPrivate && (value == null || value.trim().isEmpty)) {
+                              return 'Password is required for private polls';
+                            }
+                            if (_isPrivate && value!.length < 4) {
+                              return 'Password must be at least 4 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 32),
-
-                // Create Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _handleCreatePoll,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    icon: const Icon(
-                      Icons.add_circle_outline,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Create Poll',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
 
                 const SizedBox(height: 40),
               ],
@@ -592,6 +694,6 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

@@ -1,15 +1,31 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/poll.dart';
+import '../../repositories/polls_repository.dart';
 import 'polls_event.dart';
 import 'polls_state.dart';
 
+class _PollsUpdatedEvent extends PollsEvent {
+  final List<Poll> polls;
+
+  const _PollsUpdatedEvent(this.polls);
+
+  @override
+  List<Object?> get props => [polls];
+}
+
 class PollsBloc extends Bloc<PollsEvent, PollsState> {
+  final PollsRepository _pollsRepository;
+  StreamSubscription<List<Poll>>? _pollsSubscription;
   bool _isErrorMode = false;
   
-  PollsBloc() : super(const PollsInitialState()) {
+  PollsBloc({PollsRepository? pollsRepository})
+      : _pollsRepository = pollsRepository ?? PollsRepository(),
+        super(const PollsInitialState()) {
     on<LoadPollsEvent>(_onLoadPollsEvent);
     on<RefreshPollsEvent>(_onRefreshPollsEvent);
     on<TestErrorEvent>(_onTestErrorEvent);
+    on<_PollsUpdatedEvent>(_onPollsUpdatedEvent);
   }
 
   Future<void> _onLoadPollsEvent(
@@ -23,44 +39,16 @@ class PollsBloc extends Bloc<PollsEvent, PollsState> {
         throw 'Test error';
       }
       
-      await Future.delayed(const Duration(seconds: 1));
-
-      final result = [
-        const Poll(
-          id: '#VP001',
-          question: 'What is your favorite cider brand?',
-          author: 'Yurii Surniak',
-          timeAgo: '2 hours ago',
-          votes: 11,
-          status: 'OPEN',
+      await _pollsSubscription?.cancel();
+      
+      await emit.forEach<List<Poll>>(
+        _pollsRepository.getActivePolls(),
+        onData: (polls) => PollsLoadedState(data: polls),
+        onError: (error, stackTrace) => PollsErrorState(
+          error: 'Failed to load polls: ${error.toString()}',
+          data: state.data,
         ),
-        const Poll(
-          id: '#VP002',
-          question: 'Which beer do you prefer?',
-          author: 'Jane Smith',
-          timeAgo: '5 hours ago',
-          votes: 123,
-          status: 'CLOSED',
-        ),
-        const Poll(
-          id: '#VP003',
-          question: 'Best operating system for development?',
-          author: 'Mike Johnson',
-          timeAgo: '1 day ago',
-          votes: 321,
-          status: 'OPEN',
-        ),
-        const Poll(
-          id: '#VP004',
-          question: 'Favorite web development framework?',
-          author: 'Yurii Surniak',
-          timeAgo: '3 days ago',
-          votes: 423,
-          status: 'MINE',
-        ),
-      ];
-
-      emit(PollsLoadedState(data: result));
+      );
     } catch (e) {
       emit(PollsErrorState(
         error: 'An unexpected error occurred: ${e.toString()}',
@@ -69,61 +57,17 @@ class PollsBloc extends Bloc<PollsEvent, PollsState> {
     }
   }
 
+  Future<void> _onPollsUpdatedEvent(
+    _PollsUpdatedEvent event,
+    Emitter<PollsState> emit,
+  ) async {
+  }
+
   Future<void> _onRefreshPollsEvent(
     RefreshPollsEvent event,
     Emitter<PollsState> emit,
   ) async {
-    emit(PollsLoadingState(data: state.data));
-
-    try {
-      if (_isErrorMode) {
-        throw 'Test error';
-      }
-      
-      await Future.delayed(const Duration(seconds: 1));
-
-      final result = [
-        const Poll(
-          id: '#VP001',
-          question: 'What is your favorite cider brand?',
-          author: 'Yurii Surniak',
-          timeAgo: '2 hours ago',
-          votes: 11,
-          status: 'OPEN',
-        ),
-        const Poll(
-          id: '#VP002',
-          question: 'Which beer do you prefer?',
-          author: 'Jane Smith',
-          timeAgo: '5 hours ago',
-          votes: 123,
-          status: 'CLOSED',
-        ),
-        const Poll(
-          id: '#VP003',
-          question: 'Best operating system for development?',
-          author: 'Mike Johnson',
-          timeAgo: '1 day ago',
-          votes: 321,
-          status: 'OPEN',
-        ),
-        const Poll(
-          id: '#VP004',
-          question: 'Favorite web development framework?',
-          author: 'Yurii Surniak',
-          timeAgo: '3 days ago',
-          votes: 423,
-          status: 'MINE',
-        ),
-      ];
-
-      emit(PollsLoadedState(data: result));
-    } catch (e) {
-      emit(PollsErrorState(
-        error: 'Failed to refresh polls: ${e.toString()}',
-        data: state.data,
-      ));
-    }
+    add(LoadPollsEvent());
   }
 
   Future<void> _onTestErrorEvent(
@@ -139,5 +83,11 @@ class PollsBloc extends Bloc<PollsEvent, PollsState> {
     } catch (e) {
       emit(PollsErrorState(error: e.toString(), data: []));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _pollsSubscription?.cancel();
+    return super.close();
   }
 }

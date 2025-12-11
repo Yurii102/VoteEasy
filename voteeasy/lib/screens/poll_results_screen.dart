@@ -43,8 +43,10 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
   }
 
   Color _getStatusColor() {
-    switch (widget.pollData['status']) {
+    final status = widget.pollData['status'] as String? ?? 'active';
+    switch (status.toUpperCase()) {
       case 'OPEN':
+      case 'ACTIVE':
         return AppColors.pollOpen;
       case 'CLOSED':
         return AppColors.pollClosed;
@@ -137,7 +139,7 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.pollData['id'],
+                          widget.pollData['id'] as String? ?? 'Unknown',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -155,7 +157,7 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.pollData['status'],
+                          (widget.pollData['status'] as String? ?? 'active').toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -167,7 +169,7 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    widget.pollData['question'],
+                    widget.pollData['question'] as String? ?? 'No question',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -218,7 +220,7 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
                     child: _buildStatCard(
                       Icons.visibility_outlined,
                       'Views',
-                      '${widget.pollData['votes'] * 3}',
+                      '${(widget.pollData['votes'] as int? ?? 0) * 3}',
                       const Color(0xFF10B981),
                     ),
                   ),
@@ -363,7 +365,7 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
                   const SizedBox(height: 24),
 
                   // Winner Card (if poll is closed)
-                  if (widget.pollData['status'] == 'CLOSED') ...[
+                  if ((widget.pollData['status'] as String? ?? '').toUpperCase() == 'CLOSED') ...[
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -456,13 +458,13 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
                         _buildInfoRow(
                           Icons.person_outline,
                           'Created by',
-                          widget.pollData['author'],
+                          widget.pollData['author'] as String? ?? 'Unknown',
                         ),
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           Icons.calendar_today,
                           'Posted',
-                          widget.pollData['timeAgo'],
+                          widget.pollData['timeAgo'] as String? ?? 'Unknown',
                         ),
                         const SizedBox(height: 12),
                         _buildInfoRow(

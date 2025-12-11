@@ -12,6 +12,7 @@ class AppColors {
   
   static const Color success = Color.fromARGB(255, 16, 185, 129);
   static const Color error = Color.fromARGB(255, 239, 68, 68);
+  static const Color warning = Color.fromARGB(255, 245, 158, 11);
   
   static const Color pollOpen = Color.fromARGB(255, 16, 185, 129);
   static const Color pollClosed = Color.fromARGB(255, 239, 68, 68);

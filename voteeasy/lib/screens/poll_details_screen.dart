@@ -3,14 +3,19 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import '../core/services/analytics_service.dart';
+import '../core/repositories/polls_repository.dart';
+import '../core/repositories/votes_repository.dart';
+import '../core/models/poll.dart';
 import 'poll_results_screen.dart';
 
 class PollDetailsScreen extends StatefulWidget {
-  final Map<String, dynamic> pollData;
+  final String pollId;
+  final Map<String, dynamic>? pollData; // Deprecated, для зворотньої сумісності
 
   const PollDetailsScreen({
     super.key,
-    required this.pollData,
+    required this.pollId,
+    this.pollData,
   });
 
   @override
@@ -19,16 +24,13 @@ class PollDetailsScreen extends StatefulWidget {
 
 class _PollDetailsScreenState extends State<PollDetailsScreen> {
   final AnalyticsService _analyticsService = AnalyticsService.instance;
-  int? _selectedOptionIndex;
+  final PollsRepository _pollsRepository = PollsRepository();
+  final VotesRepository _votesRepository = VotesRepository();
+  
+  Poll? _poll;
+  bool _isLoading = true;
+  List<int> _selectedOptionIndexes = [];
   bool _hasVoted = false;
-
-  // Hardcoded poll options for demonstration
-  final List<Map<String, dynamic>> _pollOptions = [
-    {'id': 1, 'text': 'Option A', 'votes': 45},
-    {'id': 2, 'text': 'Option B', 'votes': 32},
-    {'id': 3, 'text': 'Option C', 'votes': 18},
-    {'id': 4, 'text': 'Option D', 'votes': 12},
-  ];
 
   @override
   void initState() {
@@ -37,30 +39,77 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
       screenName: 'poll_details_screen',
       screenClass: 'PollDetailsScreen',
     );
-    _analyticsService.logEvent(
-      name: 'poll_viewed',
-      parameters: {
-        'poll_id': widget.pollData['id'],
-        'poll_question': widget.pollData['question'],
-      },
-    );
+    _loadPollData();
+  }
+
+  Future<void> _loadPollData() async {
+    try {
+      // Завантаження опитування
+      final poll = await _pollsRepository.getPollById(widget.pollId);
+      
+      if (poll == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Poll not found'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          Navigator.pop(context);
+        }
+        return;
+      }
+
+      // Перевірка чи користувач голосував
+      final hasVoted = await _votesRepository.hasUserVoted(widget.pollId);
+      final userVote = hasVoted ? await _votesRepository.getUserVote(widget.pollId) : null;
+
+      if (mounted) {
+        setState(() {
+          _poll = poll;
+          _hasVoted = hasVoted;
+          _selectedOptionIndexes = userVote ?? [];
+          _isLoading = false;
+        });
+
+        _analyticsService.logEvent(
+          name: 'poll_viewed',
+          parameters: {
+            'poll_id': poll.id,
+            'poll_question': poll.question,
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading poll: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Color _getStatusColor() {
-    switch (widget.pollData['status']) {
-      case 'OPEN':
+    if (_poll == null) return AppColors.pollOpen;
+    
+    switch (_poll!.status) {
+      case 'active':
         return AppColors.pollOpen;
-      case 'CLOSED':
+      case 'closed':
         return AppColors.pollClosed;
-      case 'MINE':
-        return AppColors.pollMine;
       default:
         return AppColors.pollOpen;
     }
   }
 
-  void _handleVote() {
-    if (_selectedOptionIndex == null) {
+  Future<void> _handleVote() async {
+    if (_selectedOptionIndexes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select an option to vote'),
@@ -70,51 +119,147 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
       return;
     }
 
-    setState(() {
-      _hasVoted = true;
-    });
+    if (_poll == null) return;
 
-    _analyticsService.logPollVoted(
-      pollId: widget.pollData['id'],
-      optionId: _pollOptions[_selectedOptionIndex!]['id'].toString(),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Vote submitted for: ${_pollOptions[_selectedOptionIndex!]['text']}',
-        ),
-        backgroundColor: AppColors.success,
-      ),
-    );
-
-    // Navigate to results after voting
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PollResultsScreen(
-              pollData: widget.pollData,
-              pollOptions: _pollOptions,
+    // Перевірка пароля для приватного опитування
+    if (_poll!.isPrivate) {
+      final password = await _showPasswordDialog();
+      if (password == null) return; // Користувач скасував
+      
+      if (password != _poll!.password) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Incorrect password'),
+              backgroundColor: AppColors.error,
             ),
+          );
+        }
+        return;
+      }
+    }
+
+    try {
+      await _votesRepository.vote(
+        pollId: widget.pollId,
+        optionIndexes: _selectedOptionIndexes,
+      );
+
+      if (mounted) {
+        setState(() {
+          _hasVoted = true;
+        });
+
+        _analyticsService.logPollVoted(
+          pollId: widget.pollId,
+          optionId: _selectedOptionIndexes.join(','),
+        );
+
+        // Перезавантажити дані для оновлення статистики
+        _loadPollData();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vote submitted successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error submitting vote: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _showPasswordDialog() async {
+    final controller = TextEditingController();
+    
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.lock, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Text('Private Poll'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'This is a private poll. Please enter the password to vote.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                prefixIcon: const Icon(Icons.lock_outline),
+              ),
+              onSubmitted: (value) => Navigator.pop(context, value),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+            child: const Text('Submit', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _viewResults() {
+    if (_poll == null) return;
+    
     _analyticsService.logPollResultsViewed(
-      pollId: widget.pollData['id'],
+      pollId: _poll!.id,
     );
+
+    // Створюємо Map для зворотньої сумісності з PollResultsScreen
+    final pollData = {
+      'id': _poll!.id,
+      'question': _poll!.question,
+      'status': _poll!.status,
+      'author': _poll!.authorName,
+      'votes': _poll!.totalVotes,
+      'timeAgo': _poll!.timeAgo,
+    };
+
+    final pollOptions = _poll!.options.asMap().entries.map((entry) {
+      return {
+        'text': entry.value,
+        'votes': _poll!.votesCount[entry.key.toString()] ?? 0,
+      };
+    }).toList();
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PollResultsScreen(
-          pollData: widget.pollData,
-          pollOptions: _pollOptions,
+          pollData: pollData,
+          pollOptions: pollOptions,
         ),
       ),
     );
@@ -122,7 +267,67 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isClosed = widget.pollData['status'] == 'CLOSED';
+    // Loading state
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Poll Details',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        ),
+      );
+    }
+
+    // Poll not found
+    if (_poll == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Poll Details',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        body: const Center(
+          child: Text(
+            'Poll not found',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final bool isClosed = _poll!.status == 'closed';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -192,7 +397,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.pollData['id'],
+                          _poll!.id,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -210,7 +415,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.pollData['status'],
+                          _poll!.status.toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -222,7 +427,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    widget.pollData['question'],
+                    _poll!.question,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -237,7 +442,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                         radius: 16,
                         backgroundColor: Colors.white,
                         child: Text(
-                          widget.pollData['author'].substring(0, 1),
+                          _poll!.authorName.substring(0, 1),
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -251,7 +456,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.pollData['author'],
+                              _poll!.authorName,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -259,7 +464,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                               ),
                             ),
                             Text(
-                              widget.pollData['timeAgo'],
+                              _poll!.timeAgo,
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 12,
@@ -280,7 +485,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${widget.pollData['votes']} total votes',
+                        '${_poll!.totalVotes} total votes',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 14,
@@ -294,7 +499,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${widget.pollData['votes'] * 3} views',
+                        '${_poll!.totalVotes * 3} views',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 14,
@@ -352,17 +557,28 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _pollOptions.length,
+                    itemCount: _poll!.options.length,
                     itemBuilder: (context, index) {
-                      final option = _pollOptions[index];
-                      final isSelected = _selectedOptionIndex == index;
+                      final option = _poll!.options[index];
+                      final optionVotes = _poll!.votesCount[index.toString()] ?? 0;
+                      final isSelected = _selectedOptionIndexes.contains(index);
 
                       return GestureDetector(
                         onTap: isClosed || _hasVoted
                             ? null
                             : () {
                                 setState(() {
-                                  _selectedOptionIndex = index;
+                                  if (_poll!.allowMultipleVotes) {
+                                    // Multiple choice: toggle selection
+                                    if (isSelected) {
+                                      _selectedOptionIndexes.remove(index);
+                                    } else {
+                                      _selectedOptionIndexes.add(index);
+                                    }
+                                  } else {
+                                    // Single choice: replace selection
+                                    _selectedOptionIndexes = [index];
+                                  }
                                 });
                               },
                         child: Container(
@@ -415,7 +631,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  option['text'],
+                                  option,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: isSelected
@@ -425,7 +641,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                                   ),
                                 ),
                               ),
-                              if (isClosed)
+                              if (isClosed || _hasVoted)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
@@ -436,7 +652,7 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    '${option['votes']} votes',
+                                    '$optionVotes votes',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
@@ -540,25 +756,25 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
                         _buildInfoRow(
                           Icons.calendar_today,
                           'Created',
-                          widget.pollData['timeAgo'],
+                          _poll!.timeAgo,
                         ),
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           Icons.timer_outlined,
                           'Status',
-                          widget.pollData['status'],
+                          _poll!.status.toUpperCase(),
                         ),
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           Icons.category_outlined,
                           'Category',
-                          'General',
+                          _poll!.category,
                         ),
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           Icons.people_outline,
                           'Total Participants',
-                          '${widget.pollData['votes']}',
+                          '${_poll!.totalVotes}',
                         ),
                       ],
                     ),
@@ -603,3 +819,4 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
     );
   }
 }
+

@@ -7,6 +7,13 @@
 .buildlog/
 .history
 
+# Firebase configuration files (contain sensitive API keys)
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+.env
+.env.*
+
 
 
 # Flutter repo-specific
