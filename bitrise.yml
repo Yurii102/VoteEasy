@@ -68,49 +68,34 @@ workflows:
             #!/usr/bin/env bash
             set -e
             
-            echo "=== Finding debug keystore ==="
+            echo "=== Setting up debug keystore ==="
             
-            # Check common locations
-            LOCATIONS=(
-              "$HOME/.android/debug.keystore"
-              "/root/.android/debug.keystore"
-              "$ANDROID_HOME/.android/debug.keystore"
-              "$ANDROID_SDK_ROOT/../.android/debug.keystore"
-            )
+            # Create standard Android debug keystore location
+            mkdir -p ~/.android
             
-            KEYSTORE_PATH=""
-            for loc in "${LOCATIONS[@]}"; do
-              if [ -f "$loc" ]; then
-                echo "Found keystore at: $loc"
-                KEYSTORE_PATH="$loc"
-                break
-              fi
-            done
-            
-            # If not found, search for it
-            if [ -z "$KEYSTORE_PATH" ]; then
-              echo "Searching for debug.keystore..."
-              FOUND=$(find /root /home -name "debug.keystore" 2>/dev/null | head -1)
-              if [ -n "$FOUND" ]; then
-                echo "Found at: $FOUND"
-                KEYSTORE_PATH="$FOUND"
-              fi
-            fi
-            
-            # If still not found, create one
-            if [ -z "$KEYSTORE_PATH" ] || [ ! -f "$KEYSTORE_PATH" ]; then
-              echo "No debug keystore found. Creating one..."
-              mkdir -p ~/.android
-              keytool -genkey -v -keystore ~/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-              KEYSTORE_PATH="$HOME/.android/debug.keystore"
+            # Check if standard debug keystore exists
+            if [ ! -f ~/.android/debug.keystore ]; then
+              echo "Creating standard debug keystore..."
+              keytool -genkey -v \
+                -keystore ~/.android/debug.keystore \
+                -alias androiddebugkey \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -storepass android \
+                -keypass android \
+                -dname "CN=Android Debug,O=Android,C=US"
             fi
             
             echo ""
             echo "=== SHA-1 FINGERPRINT ==="
-            keytool -list -v -keystore "$KEYSTORE_PATH" -alias androiddebugkey -storepass android -keypass android | grep -E "SHA1:|SHA-1:"
+            keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android | grep -E "SHA1:|SHA-1:"
             echo ""
-            echo ">>> ADD THIS SHA-1 TO FIREBASE CONSOLE <<<"
-            echo "Firebase Console > Project Settings > Your apps > Android app > Add fingerprint"
+            echo ">>> ADD THIS SHA-1 TO FIREBASE CONSOLE IF DIFFERENT <<<"
+            
+            # Export for Gradle to use
+            export ANDROID_DEBUG_KEYSTORE="$HOME/.android/debug.keystore"
+            envman add --key ANDROID_DEBUG_KEYSTORE --value "$HOME/.android/debug.keystore"
     
     - script@1:
         title: Build Android APK (Release)
