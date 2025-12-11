@@ -4,14 +4,15 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 project_type: flutter
 
-# Trigger налаштування
-triggers:
-  push:
-    - branch: main
-      workflow: android_firebase
-  pull_request:
-    - source_branch: "*"
-      workflow: android_firebase
+pipelines:
+  pipeline_android_firebase:
+    stages:
+    - stage_android_firebase: {}
+
+stages:
+  stage_android_firebase:
+    workflows:
+    - android_firebase: {}
 
 # Workflows
 workflows:
@@ -27,10 +28,10 @@ workflows:
     # 2. Клонувати репозиторій
     - git-clone@8: {}
     
-    # 3. Встановити Flutter
+    # 3. Встановити Flutter (master channel для SDK 3.9.2+)
     - flutter-installer@0:
         inputs:
-        - version: 3.24.0
+        - version: master
         - is_update: 'false'
     
     # 4. Cache Dart packages
