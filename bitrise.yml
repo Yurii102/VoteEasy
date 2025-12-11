@@ -4,6 +4,12 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 project_type: flutter
 
+Trigger_map:
+- push_branch: main
+workflow: android_firebase
+ 
+
+
 pipelines:
   pipeline_android_firebase:
     stages:
