@@ -5,6 +5,7 @@ import '../../repositories/polls_repository.dart';
 import 'polls_event.dart';
 import 'polls_state.dart';
 
+
 class _PollsUpdatedEvent extends PollsEvent {
   final List<Poll> polls;
 
