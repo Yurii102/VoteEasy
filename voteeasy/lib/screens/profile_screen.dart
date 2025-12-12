@@ -92,7 +92,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     try {
-      // Підрахунок опитувань в яких користувач проголосував
       int participated = 0;
       final allPolls = await _pollsRepository.getActivePolls().first;
 

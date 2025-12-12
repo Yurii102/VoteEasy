@@ -29,9 +29,6 @@ workflows:
         - version: master
         - is_update: 'false'
     
-    - restore-dart-cache@2:
-        title: Restore Dart packages cache
-    
     - script@1:
         title: Flutter packages get
         inputs:
