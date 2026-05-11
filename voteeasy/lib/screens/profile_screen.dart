@@ -3,13 +3,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
-import '../core/services/user_preferences_service.dart';
-import '../core/services/storage_service.dart';
-import '../core/repositories/auth_repository.dart';
-import '../core/repositories/polls_repository.dart';
-import '../core/models/poll.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
+import 'package:voteeasy/core/services/user_preferences_service.dart';
+import 'package:voteeasy/core/services/storage_service.dart';
+import 'package:voteeasy/core/repositories/auth_repository.dart';
+import 'package:voteeasy/core/repositories/polls_repository.dart';
+import 'package:voteeasy/core/models/poll.dart';
 import 'login_screen.dart';
 import 'edit_poll_screen.dart';
 
@@ -1200,3 +1200,4 @@ class _CircleProgressPainter extends CustomPainter {
     return oldDelegate.percentage != percentage || oldDelegate.color != color;
   }
 }
+

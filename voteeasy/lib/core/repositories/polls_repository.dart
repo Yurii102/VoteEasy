@@ -1,5 +1,5 @@
-import '../models/poll.dart';
-import '../services/firestore_service.dart';
+import 'package:voteeasy/core/models/poll.dart';
+import 'package:voteeasy/core/services/firestore_service.dart';
 
 class PollsRepository {
   final FirestoreService _firestoreService;
@@ -93,3 +93,4 @@ class PollsRepository {
     return _firestoreService.getPollStats(pollId);
   }
 }
+

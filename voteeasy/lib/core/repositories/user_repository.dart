@@ -1,5 +1,5 @@
-import '../models/user.dart';
-import '../services/firestore_service.dart';
+import 'package:voteeasy/core/models/user.dart';
+import 'package:voteeasy/core/services/firestore_service.dart';
 
 class UserRepository {
   final FirestoreService _firestoreService;
@@ -42,3 +42,4 @@ class UserRepository {
     });
   }
 }
+

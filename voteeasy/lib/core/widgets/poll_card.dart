@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
 
 class PollCard extends StatelessWidget {
   final String pollId;
@@ -231,3 +231,4 @@ class PollCard extends StatelessWidget {
     );
   }
 }
+

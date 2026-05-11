@@ -90,3 +90,4 @@ class User extends Equatable {
         updatedAt,
       ];
 }
+

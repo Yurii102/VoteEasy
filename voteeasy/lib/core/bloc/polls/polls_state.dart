@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../models/poll.dart';
+import 'package:voteeasy/core/models/poll.dart';
 
 abstract class PollsState extends Equatable {
   final List<Poll> data;
@@ -10,22 +10,18 @@ abstract class PollsState extends Equatable {
   List<Object?> get props => [data];
 }
 
-// Початковий стан
 class PollsInitialState extends PollsState {
   const PollsInitialState() : super(data: const []);
 }
 
-// Стан завантаження
 class PollsLoadingState extends PollsState {
   const PollsLoadingState({required super.data});
 }
 
-// Стан успішного завантаження
 class PollsLoadedState extends PollsState {
   const PollsLoadedState({required super.data});
 }
 
-// Стан помилки
 class PollsErrorState extends PollsState {
   final String error;
 
@@ -37,3 +33,4 @@ class PollsErrorState extends PollsState {
   @override
   List<Object?> get props => [error, data];
 }
+

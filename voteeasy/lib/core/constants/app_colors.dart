@@ -18,3 +18,4 @@ class AppColors {
   static const Color pollClosed = Color.fromARGB(255, 239, 68, 68);
   static const Color pollMine = Color.fromARGB(255, 139, 92, 246);
 }
+

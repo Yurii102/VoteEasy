@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
 
 class CustomTextField extends StatelessWidget {
   final String hintText;
@@ -80,3 +80,4 @@ class CustomTextField extends StatelessWidget {
     );
   }
 }
+

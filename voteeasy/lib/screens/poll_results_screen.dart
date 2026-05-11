@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
 
 class PollResultsScreen extends StatefulWidget {
   final Map<String, dynamic> pollData;
@@ -573,3 +573,4 @@ class _PollResultsScreenState extends State<PollResultsScreen> {
     );
   }
 }
+

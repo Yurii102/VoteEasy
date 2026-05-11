@@ -47,3 +47,4 @@ class UpdatePollSubmitted extends UpdatePollEvent {
 class UpdatePollReset extends UpdatePollEvent {
   const UpdatePollReset();
 }
+

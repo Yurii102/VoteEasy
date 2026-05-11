@@ -218,3 +218,4 @@ class Poll extends Equatable {
         votesCount,
       ];
 }
+

@@ -36,3 +36,4 @@ class SearchPollsEvent extends PollsEvent {
 class TestErrorEvent extends PollsEvent {
   const TestErrorEvent();
 }
+

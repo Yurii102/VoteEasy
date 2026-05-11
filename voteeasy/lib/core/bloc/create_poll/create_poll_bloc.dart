@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../repositories/polls_repository.dart';
+import 'package:voteeasy/core/repositories/polls_repository.dart';
 import 'create_poll_event.dart';
 import 'create_poll_state.dart';
 
@@ -68,3 +68,4 @@ class CreatePollBloc extends Bloc<CreatePollEvent, CreatePollState> {
     emit(const CreatePollInitial());
   }
 }
+

@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
-import '../core/bloc/create_poll/create_poll_bloc.dart';
-import '../core/bloc/create_poll/create_poll_event.dart';
-import '../core/bloc/create_poll/create_poll_state.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
+import 'package:voteeasy/core/bloc/create_poll/create_poll_bloc.dart';
+import 'package:voteeasy/core/bloc/create_poll/create_poll_event.dart';
+import 'package:voteeasy/core/bloc/create_poll/create_poll_state.dart';
 
 class CreatePollScreen extends StatelessWidget {
   const CreatePollScreen({super.key});
@@ -697,3 +697,4 @@ class _CreatePollScreenContentState extends State<_CreatePollScreenContent> {
     ));
   }
 }
+

@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
-import '../core/bloc/update_poll/update_poll_bloc.dart';
-import '../core/bloc/update_poll/update_poll_event.dart';
-import '../core/bloc/update_poll/update_poll_state.dart';
-import '../core/models/poll.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
+import 'package:voteeasy/core/bloc/update_poll/update_poll_bloc.dart';
+import 'package:voteeasy/core/bloc/update_poll/update_poll_event.dart';
+import 'package:voteeasy/core/bloc/update_poll/update_poll_state.dart';
+import 'package:voteeasy/core/models/poll.dart';
 
 class EditPollScreen extends StatelessWidget {
   final Poll poll;
@@ -602,3 +602,4 @@ class _EditPollScreenContentState extends State<_EditPollScreenContent> {
     );
   }
 }
+

@@ -2,20 +2,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
-import '../core/services/user_preferences_service.dart';
-import '../core/repositories/auth_repository.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
+import 'package:voteeasy/core/services/user_preferences_service.dart';
+import 'package:voteeasy/core/repositories/auth_repository.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import '../core/widgets/poll_card.dart';
-import '../core/bloc/polls/polls_bloc.dart';
-import '../core/bloc/polls/polls_event.dart';
-import '../core/models/poll.dart';
+import 'package:voteeasy/core/widgets/poll_card.dart';
+import 'package:voteeasy/core/bloc/polls/polls_bloc.dart';
+import 'package:voteeasy/core/bloc/polls/polls_event.dart';
+import 'package:voteeasy/core/models/poll.dart';
 import 'profile_screen.dart';
 import 'poll_details_screen.dart';
 import 'poll_results_screen.dart';
 import 'create_poll_screen.dart';
-import '../core/bloc/polls/polls_state.dart';
+import 'package:voteeasy/core/bloc/polls/polls_state.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -651,3 +651,4 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     );
   }
 }
+

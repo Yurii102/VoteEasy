@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../models/poll.dart';
+import 'package:voteeasy/core/models/poll.dart';
 
 abstract class CreatePollState extends Equatable {
   const CreatePollState();
@@ -33,3 +33,4 @@ class PollCreateError extends CreatePollState {
   @override
   List<Object?> get props => [message];
 }
+

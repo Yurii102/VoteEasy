@@ -72,3 +72,4 @@ class Vote extends Equatable {
         votedAt,
       ];
 }
+

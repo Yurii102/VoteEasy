@@ -1,11 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
-import '../core/repositories/polls_repository.dart';
-import '../core/repositories/votes_repository.dart';
-import '../core/models/poll.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
+import 'package:voteeasy/core/repositories/polls_repository.dart';
+import 'package:voteeasy/core/repositories/votes_repository.dart';
+import 'package:voteeasy/core/models/poll.dart';
 import 'poll_results_screen.dart';
 
 class PollDetailsScreen extends StatefulWidget {
@@ -819,4 +819,5 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
     );
   }
 }
+
 

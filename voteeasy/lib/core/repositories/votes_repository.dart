@@ -1,5 +1,5 @@
-import '../models/vote.dart';
-import '../services/firestore_service.dart';
+import 'package:voteeasy/core/models/vote.dart';
+import 'package:voteeasy/core/services/firestore_service.dart';
 class VotesRepository {
   final FirestoreService _firestoreService;
 
@@ -39,3 +39,4 @@ class VotesRepository {
     }
   }
 }
+

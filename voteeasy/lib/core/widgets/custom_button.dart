@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -65,3 +65,4 @@ class CustomButton extends StatelessWidget {
     );
   }
 }
+

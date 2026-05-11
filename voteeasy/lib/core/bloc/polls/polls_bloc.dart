@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../models/poll.dart';
-import '../../repositories/polls_repository.dart';
+import 'package:voteeasy/core/models/poll.dart';
+import 'package:voteeasy/core/repositories/polls_repository.dart';
 import 'polls_event.dart';
 import 'polls_state.dart';
 
@@ -92,3 +92,4 @@ class PollsBloc extends Bloc<PollsEvent, PollsState> {
     return super.close();
   }
 }
+

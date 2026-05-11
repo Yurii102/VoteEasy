@@ -47,3 +47,4 @@ class CreatePollSubmitted extends CreatePollEvent {
 class CreatePollReset extends CreatePollEvent {
   const CreatePollReset();
 }
+

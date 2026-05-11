@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
-import '../core/services/analytics_service.dart';
-import '../core/repositories/auth_repository.dart';
+import 'package:voteeasy/core/constants/app_colors.dart';
+import 'package:voteeasy/core/services/analytics_service.dart';
+import 'package:voteeasy/core/repositories/auth_repository.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -525,3 +525,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/poll.dart';
+import 'package:voteeasy/core/models/poll.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -352,3 +352,4 @@ class FirestoreService {
     return _usersCollection.doc(userId).snapshots();
   }
 }
+
