@@ -95,33 +95,24 @@ workflows:
                 echo "$KEY_PROPERTIES" > "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties"
     - script@1:
         inputs:
-        - content: >-
+        - content: |-
             #!/usr/bin/env bash
-
             set -e
-
-
-            # Download keystore from Bitrise
 
             if [ -z "$BITRISEIO_ANDROID_KEYSTORE_URL" ]; then
               echo "ERROR: BITRISEIO_ANDROID_KEYSTORE_URL is not set."
               exit 1
             fi
 
-
             curl -fL "$BITRISEIO_ANDROID_KEYSTORE_URL" \
               -o "$BITRISE_SOURCE_DIR/voteeasy/android/voteeasy-release.jks"
 
-            # Write key.properties
-
-            if [ -z "$KEY_PROPERTIES" ]; then
-              echo "ERROR: KEY_PROPERTIES is not set."
-              exit 1
-            fi
-
-
-            echo "$KEY_PROPERTIES" >
-            "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties"
+            cat > "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties" << EOF
+            storeFile=../voteeasy-release.jks
+            storePassword=$BITRISEIO_ANDROID_KEYSTORE_PASSWORD
+            keyAlias=$BITRISEIO_ANDROID_KEYSTORE_ALIAS
+            keyPassword=$BITRISEIO_ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD
+            EOF
         title: Key
     - script@1:
         title: Build Android APK (Release)
