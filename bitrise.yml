@@ -81,16 +81,14 @@ workflows:
             # Export for Gradle to use
             export ANDROID_DEBUG_KEYSTORE="$HOME/.android/debug.keystore"
             envman add --key ANDROID_DEBUG_KEYSTORE --value "$HOME/.android/debug.keystore"
-    - script@1:
-        inputs:
-        - content: >-
-            #!/usr/bin/env bash
+        - script@1:
+                title: Prepare release keystore
+                inputs:
+                - content: |-
+                        #!/usr/bin/env bash
+                        set -e
 
-            set -e
-
-
-            # Завантажити keystore з Bitrise
-
+                        # Download keystore from Bitrise.
                         if [ -z "$BITRISEIO_ANDROID_KEYSTORE_URL" ]; then
                             echo "ERROR: BITRISEIO_ANDROID_KEYSTORE_URL is not set."
                             exit 1
@@ -99,15 +97,13 @@ workflows:
                         curl -fL "$BITRISEIO_ANDROID_KEYSTORE_URL" \
                             -o "$BITRISE_SOURCE_DIR/voteeasy/android/voteeasy-release.jks"
 
-            # Записати key.properties
-
+                        # Write key.properties.
                         if [ -z "$KEY_PROPERTIES" ]; then
                             echo "ERROR: KEY_PROPERTIES is not set."
                             exit 1
                         fi
 
-                        echo "$KEY_PROPERTIES" >
-                        "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties"
+                        echo "$KEY_PROPERTIES" > "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties"
     - script@1:
         title: Build Android APK (Release)
         inputs:
