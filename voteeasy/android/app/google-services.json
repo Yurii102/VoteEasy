@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "768252539367-cgttg386ganrfre0u0e06nntbk1ck4u0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.voteeasy",
+            "certificate_hash": "5afb4d8c12acf43a956b21850f84f2a38a08aabe"
+          }
+        },
+        {
           "client_id": "768252539367-d5htvi1oee79832b5s7ulbt7ibfhblls.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -83,6 +83,23 @@ workflows:
             export ANDROID_DEBUG_KEYSTORE="$HOME/.android/debug.keystore"
             envman add --key ANDROID_DEBUG_KEYSTORE --value "$HOME/.android/debug.keystore"
     - script@1:
+        inputs:
+        - content: >-
+            #!/usr/bin/env bash
+
+            set -e
+
+
+            # Завантажити keystore з Bitrise
+
+            bitriseio_download_file "$BITRISEIO_ANDROID_KEYSTORE_URL" \
+              "$BITRISE_SOURCE_DIR/voteeasy/android/voteeasy-release.jks"
+
+            # Записати key.properties
+
+            echo "$KEY_PROPERTIES" >
+            "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties"
+    - script@1:
         title: Build Android APK (Release)
         inputs:
         - content: "#!/usr/bin/env bash
@@ -172,38 +189,22 @@ workflows:
             echo "Firebase configuration verified successfully"
     - script@1:
         inputs:
-        - content: >-
+        - content: |-
             #!/usr/bin/env bash
-
             # fail if any commands fails
-
             set -e
-
-            # make pipelines' return status equal the last command to exit with
-            a non-zero status, or zero if all commands exit successfully
-
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
             set -o pipefail
-
             # debug log
-
             set -x
 
-
             # write your script here
-
-            echo "$FIREBASE_SERVICE_ACCOUNT_JSON" >
-            $BITRISE_SOURCE_DIR/firebase-sa.json
-
-            envman add --key GOOGLE_APPLICATION_CREDENTIALS --value
-            "$BITRISE_SOURCE_DIR/firebase-sa.json"
-
+            echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > $BITRISE_SOURCE_DIR/firebase-sa.json
+            envman add --key GOOGLE_APPLICATION_CREDENTIALS --value "$BITRISE_SOURCE_DIR/firebase-sa.json"
 
             # or run a script from your repository, like:
-
             # bash ./path/to/script.sh
-
             # not just bash, e.g.:
-
             # ruby ./path/to/script.rb
     - script@1:
         title: Deploy to Firebase App Distribution
