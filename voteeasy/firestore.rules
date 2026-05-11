@@ -37,9 +37,14 @@ service cloud.firestore {
                     && request.resource.data.options.size() >= 2
                     && request.resource.data.options.size() <= 10;
       
-      // Оновлювати може тільки автор опитування
-      allow update: if isAuthenticated() 
-                    && resource.data.authorId == request.auth.uid;
+      // Allow author edits, or authenticated vote count updates only.
+      allow update: if isAuthenticated() && (
+                    resource.data.authorId == request.auth.uid
+                    || (
+                      request.resource.data.diff(resource.data).changedKeys()
+                        .hasOnly(['votesCount', 'totalVotes', 'updatedAt'])
+                    )
+                  );
       
       // Видаляти може тільки автор опитування
       allow delete: if isAuthenticated() 

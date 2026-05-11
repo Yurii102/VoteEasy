@@ -6,7 +6,7 @@ import 'package:voteeasy/core/services/analytics_service.dart';
 import 'package:voteeasy/core/repositories/polls_repository.dart';
 import 'package:voteeasy/core/repositories/votes_repository.dart';
 import 'package:voteeasy/core/models/poll.dart';
-import 'poll_results_screen.dart';
+import 'package:voteeasy/screens/poll_results_screen.dart';
 
 class PollDetailsScreen extends StatefulWidget {
   final String pollId;
@@ -819,5 +819,6 @@ class _PollDetailsScreenState extends State<PollDetailsScreen> {
     );
   }
 }
+
 
 

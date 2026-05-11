@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:voteeasy/core/constants/app_colors.dart';
 import 'package:voteeasy/core/services/analytics_service.dart';
 import 'package:voteeasy/core/repositories/auth_repository.dart';
-import 'home_screen.dart';
-import 'register_screen.dart';
+import 'package:voteeasy/screens/home_screen.dart';
+import 'package:voteeasy/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -512,4 +512,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
 

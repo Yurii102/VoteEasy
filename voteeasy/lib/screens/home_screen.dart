@@ -11,10 +11,10 @@ import 'package:voteeasy/core/widgets/poll_card.dart';
 import 'package:voteeasy/core/bloc/polls/polls_bloc.dart';
 import 'package:voteeasy/core/bloc/polls/polls_event.dart';
 import 'package:voteeasy/core/models/poll.dart';
-import 'profile_screen.dart';
-import 'poll_details_screen.dart';
-import 'poll_results_screen.dart';
-import 'create_poll_screen.dart';
+import 'package:voteeasy/screens/profile_screen.dart';
+import 'package:voteeasy/screens/poll_details_screen.dart';
+import 'package:voteeasy/screens/poll_results_screen.dart';
+import 'package:voteeasy/screens/create_poll_screen.dart';
 import 'package:voteeasy/core/bloc/polls/polls_state.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -651,4 +651,5 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     );
   }
 }
+
 

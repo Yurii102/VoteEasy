@@ -10,8 +10,8 @@ import 'package:voteeasy/core/services/storage_service.dart';
 import 'package:voteeasy/core/repositories/auth_repository.dart';
 import 'package:voteeasy/core/repositories/polls_repository.dart';
 import 'package:voteeasy/core/models/poll.dart';
-import 'login_screen.dart';
-import 'edit_poll_screen.dart';
+import 'package:voteeasy/screens/login_screen.dart';
+import 'package:voteeasy/screens/edit_poll_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1200,4 +1200,5 @@ class _CircleProgressPainter extends CustomPainter {
     return oldDelegate.percentage != percentage || oldDelegate.color != color;
   }
 }
+
 
