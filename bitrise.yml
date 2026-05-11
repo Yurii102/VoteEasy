@@ -194,8 +194,8 @@ workflows:
             echo "$FIREBASE_SERVICE_ACCOUNT_JSON" >
             $BITRISE_SOURCE_DIR/firebase-sa.json
 
-            export
-            GOOGLE_APPLICATION_CREDENTIALS=$BITRISE_SOURCE_DIR/firebase-sa.json
+            envman add --key GOOGLE_APPLICATION_CREDENTIALS --value
+            "$BITRISE_SOURCE_DIR/firebase-sa.json"
 
 
             # or run a script from your repository, like:
