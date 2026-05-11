@@ -33,8 +33,7 @@ workflows:
             flutter pub get
 
             echo "Dependencies installed successfully"
-    - script@1:
-        title: Flutter analyze
+                        echo "$KEY_PROPERTIES" > "$BITRISE_SOURCE_DIR/voteeasy/android/key.properties"
         inputs:
         - content: |-
             #!/usr/bin/env bash
